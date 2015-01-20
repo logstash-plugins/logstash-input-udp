@@ -10,7 +10,6 @@ require "socket"
 #
 class LogStash::Inputs::Udp < LogStash::Inputs::Base
   config_name "udp"
-  milestone 2
 
   default :codec, "plain"
 
