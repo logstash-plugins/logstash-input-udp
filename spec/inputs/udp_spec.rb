@@ -1,10 +1,10 @@
 # encoding: utf-8
 require_relative "../spec_helper"
-require "support/client"
+require_relative "../support/client"
 
 describe LogStash::Inputs::Udp do
 
-  let(:port)       { rand(1024)+1024 }
+  let(:port)       { rand(1024..65535) }
 
   it "should register without errors" do
     plugin = LogStash::Plugin.lookup("input", "udp").new({ "port" => port })
