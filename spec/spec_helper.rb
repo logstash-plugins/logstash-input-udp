@@ -14,7 +14,7 @@ module UdpHelpers
     result = nevents.times.inject([]) do |acc|
       acc << queue.pop
     end
-    input_thread.raise(LogStash::ShutdownSignal)
+    plugin.stop
     result
   end
 

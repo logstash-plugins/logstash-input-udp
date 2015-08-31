@@ -4,18 +4,26 @@ require_relative "../support/client"
 
 describe LogStash::Inputs::Udp do
 
-  let(:port)       { rand(1024..65535) }
+  before do
+    srand(RSpec.configuration.seed)
+  end
 
-  it "should register without errors" do
-    plugin = LogStash::Plugin.lookup("input", "udp").new({ "port" => port })
-    expect { plugin.register }.to_not raise_error
+  let(:port)       { rand(1024..65535) }
+  subject { LogStash::Plugin.lookup("input", "udp").new({ "port" => port }) }
+
+  after :each do
+    subject.close rescue nil
+  end
+
+  describe "register" do
+    it "should register without errors" do
+      expect { subject.register }.to_not raise_error
+    end
   end
 
   describe "receive" do
 
     let(:client) { LogStash::Inputs::Test::UDPClient.new(port) }
-    subject      { LogStash::Inputs::Udp.new("port" => port ) }
-
     let(:nevents) { 10 }
 
     let(:events) do
@@ -30,10 +38,6 @@ describe LogStash::Inputs::Udp do
       subject.register
     end
 
-    after(:each) do
-      subject.close
-    end
-
     it "should receive events been generated" do
       expect(events.size).to be(nevents)
       messages = events.map { |event| event["message"]}
@@ -44,4 +48,7 @@ describe LogStash::Inputs::Udp do
 
   end
 
+  it_behaves_like "an interruptible input plugin" do
+    let(:config) { { "port" => port } }
+  end
 end

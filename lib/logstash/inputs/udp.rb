@@ -3,6 +3,7 @@ require "date"
 require "logstash/inputs/base"
 require "logstash/namespace"
 require "socket"
+require "stud/interval"
 
 # Read messages as events over the network via udp. The only required
 # configuration item is `port`, which specifies the udp port logstash
@@ -47,12 +48,10 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
     begin
       # udp server
       udp_listener(output_queue)
-    rescue LogStash::ShutdownSignal
-      # do nothing, shutdown was requested.
     rescue => e
       @logger.warn("UDP listener died", :exception => e, :backtrace => e.backtrace)
-      sleep(5)
-      retry
+      Stud.stoppable_sleep(5) { stop? }
+      retry unless stop?
     end # begin
   end # def run
 
@@ -74,9 +73,11 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
       Thread.new { inputworker(i) }
     end
 
-    while true
+    while !stop?
+      next if IO.select([@udp], [], [], 0.5).nil?
       #collect datagram message and add to queue
-      payload, client = @udp.recvfrom(@buffer_size)
+      payload, client = @udp.recvfrom_nonblock(@buffer_size)
+      next if payload.empty?
       @input_to_worker.push([payload, client])
     end
   ensure
