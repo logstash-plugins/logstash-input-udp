@@ -31,7 +31,7 @@ describe LogStash::Inputs::Udp do
     end
 
     after(:each) do
-      subject.teardown
+      subject.close
     end
 
     it "should receive events been generated" do

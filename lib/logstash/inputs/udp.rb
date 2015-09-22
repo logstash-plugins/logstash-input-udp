@@ -104,7 +104,7 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
   end # def inputworker
 
   public
-  def teardown
+  def close
     @udp.close if @udp && !@udp.closed?
   end
 
