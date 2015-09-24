@@ -106,7 +106,12 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
 
   public
   def close
-    @udp.close if @udp && !@udp.closed?
+    @udp.close rescue nil
+  end
+
+  public
+  def stop
+    @udp.close rescue nil
   end
 
 end # class LogStash::Inputs::Udp
