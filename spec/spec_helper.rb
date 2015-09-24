@@ -14,7 +14,7 @@ module UdpHelpers
     result = nevents.times.inject([]) do |acc|
       acc << queue.pop
     end
-    plugin.stop
+    plugin.do_stop
     result
   end
 
