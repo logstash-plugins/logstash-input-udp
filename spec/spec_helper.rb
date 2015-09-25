@@ -2,6 +2,8 @@
 require "logstash/devutils/rspec/spec_helper"
 require 'logstash/inputs/udp'
 
+# expose the udp socket so that we can assert, during
+# a spec, that it is open and we can start sending data
 class LogStash::Inputs::Udp
   attr_reader :udp
 end
