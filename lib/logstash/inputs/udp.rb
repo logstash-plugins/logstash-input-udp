@@ -100,7 +100,9 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
         end
       end
     rescue => e
-      @logger.error("Exception in inputworker", "exception" => e, "backtrace" => e.backtrace)
+      @logger.warn("Exception in inputworker", "exception" => e, "backtrace" => e.backtrace)
+      sleep(5)
+      retry
     end
   end # def inputworker
 
