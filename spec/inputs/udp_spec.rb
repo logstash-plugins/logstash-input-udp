@@ -27,7 +27,7 @@ describe LogStash::Inputs::Udp do
     let(:nevents) { 10 }
 
     let(:events) do
-      input(subject, nevents) do
+      udp_input(subject, nevents) do
         nevents.times do |i|
           client.send("msg #{i}")
         end

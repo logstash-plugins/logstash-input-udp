@@ -10,7 +10,7 @@ end
 
 module UdpHelpers
 
-  def input(plugin, size, &block)
+  def udp_input(plugin, size, &block)
     queue = Queue.new
     input_thread = Thread.new do
       plugin.run(queue)
