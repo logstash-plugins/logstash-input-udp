@@ -8,8 +8,9 @@ describe LogStash::Inputs::Udp do
     srand(RSpec.configuration.seed)
   end
 
-  let(:port)       { rand(1024..65535) }
-  subject { LogStash::Plugin.lookup("input", "udp").new({ "port" => port }) }
+  let!(:helper) { UdpHelpers.new }
+  let(:port)   { rand(1024..65535) }
+  subject      { LogStash::Plugin.lookup("input", "udp").new({ "port" => port }) }
 
   after :each do
     subject.close rescue nil
@@ -27,7 +28,7 @@ describe LogStash::Inputs::Udp do
     let(:nevents) { 10 }
 
     let(:events) do
-      input(subject, nevents) do
+      helper.input(subject, nevents) do
         nevents.times do |i|
           client.send("msg #{i}")
         end
