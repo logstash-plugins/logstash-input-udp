@@ -1,3 +1,5 @@
+# 2.0.4
+  - New dependency requirements for logstash-core for the 5.0 release
 ## 2.0.2
  - Adapt the test style to be able to run within the context of the LS
    core default plugins test (integration)
