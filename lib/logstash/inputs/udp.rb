@@ -22,7 +22,7 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
   config :port, :validate => :number, :required => true
 
   # The maximum packet size to read from the network
-  config :buffer_size, :validate => :number, :default => 8192
+  config :buffer_size, :validate => :number, :default => 65536
 
   # Number of threads processing packets
   config :workers, :validate => :number, :default => 2
