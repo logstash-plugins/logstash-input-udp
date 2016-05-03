@@ -41,7 +41,7 @@ describe LogStash::Inputs::Udp do
 
     it "should receive events been generated" do
       expect(events.size).to be(nevents)
-      messages = events.map { |event| event["message"]}
+      messages = events.map { |event| event.get("message")}
       messages.each do |message|
         expect(message).to match(/msg \d+/)
       end

@@ -95,7 +95,7 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
 
         @codec.decode(payload) do |event|
           decorate(event)
-          event["host"] ||= client[3]
+          event.set("host", client[3]) if event.get("host").nil?
           @output_queue.push(event)
         end
       end
