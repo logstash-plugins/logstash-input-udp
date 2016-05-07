@@ -31,6 +31,10 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
   # before packets will start dropping.
   config :queue_size, :validate => :number, :default => 2000
 
+  # Should the event's metadata be sent to the codec too? Only usable for codecs
+  # that support receiving metadata like the Netflow codec.
+  config :metadata, :validate => :boolean, :default => false
+
   public
   def initialize(params)
     super
@@ -93,10 +97,21 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
       while true
         payload, client = @input_to_worker.pop
 
-        @codec.decode(payload) do |event|
-          decorate(event)
-          event.set("host", client[3]) if event.get("host").nil?
-          @output_queue.push(event)
+        if @metadata
+          metadata_to_codec = {}
+          metadata_to_codec["port"] = client[1]
+          metadata_to_codec["host"] = client[3]
+          @codec.decode(payload, metadata_to_codec) do |event|
+            decorate(event)
+            event.set("host", client[3]) if event.get("host").nil?
+            @output_queue.push(event)
+          end
+        else
+          @codec.decode(payload) do |event|
+            decorate(event)
+            event.set("host", client[3]) if event.get("host").nil?
+            @output_queue.push(event)
+          end
         end
       end
     rescue => e
