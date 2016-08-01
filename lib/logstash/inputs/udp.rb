@@ -70,7 +70,7 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
 
     @input_to_worker = SizedQueue.new(@queue_size)
     metric.gauge(:queue_size, @queue_size)
-    metric.gauge(:threads, @workers)
+    metric.gauge(:workers, @workers)
 
     @input_workers = @workers.times do |i|
       @logger.debug("Starting UDP worker thread", :worker => i)
