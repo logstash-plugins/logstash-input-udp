@@ -1,3 +1,6 @@
+## 3.3.0
+  - Add metrics support for events, operations, connections and errors produced during execution.
+
 ## 3.2.1
   - Code cleanup. See https://github.com/logstash-plugins/logstash-input-udp/pull/33
 
