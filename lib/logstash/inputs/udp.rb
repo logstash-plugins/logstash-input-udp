@@ -40,6 +40,7 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
   public
   def register
     @udp = nil
+    @metric_errors = metric.namespace(:errors)
   end # def register
 
   public
@@ -50,6 +51,7 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
       udp_listener(output_queue)
     rescue => e
       @logger.warn("UDP listener died", :exception => e, :backtrace => e.backtrace)
+      @metric_errors.increment(:listener)
       Stud.stoppable_sleep(5) { stop? }
       retry unless stop?
     end # begin
@@ -67,6 +69,8 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
     @udp.bind(@host, @port)
 
     @input_to_worker = SizedQueue.new(@queue_size)
+    metric.gauge(:queue_size, @queue_size)
+    metric.gauge(:workers, @workers)
 
     @input_workers = @workers.times do |i|
       @logger.debug("Starting UDP worker thread", :worker => i)
@@ -97,10 +101,12 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
           decorate(event)
           event.set("host", client[3]) if event.get("host").nil?
           @output_queue.push(event)
+          metric.increment(:events)
         end
       end
     rescue => e
       @logger.error("Exception in inputworker", "exception" => e, "backtrace" => e.backtrace)
+      @metric_errors.increment(:worker)
     end
   end # def inputworker
 
