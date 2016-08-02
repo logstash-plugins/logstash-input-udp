@@ -51,7 +51,7 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
       udp_listener(output_queue)
     rescue => e
       @logger.warn("UDP listener died", :exception => e, :backtrace => e.backtrace)
-      @metric_errors.increment(:listener_exception)
+      @metric_errors.increment(:listener)
       Stud.stoppable_sleep(5) { stop? }
       retry unless stop?
     end # begin
@@ -106,7 +106,7 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
       end
     rescue => e
       @logger.error("Exception in inputworker", "exception" => e, "backtrace" => e.backtrace)
-      @metric_errors.increment(:worker_exception)
+      @metric_errors.increment(:worker)
     end
   end # def inputworker
 
