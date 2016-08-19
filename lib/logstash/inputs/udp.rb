@@ -41,7 +41,9 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
   public
   def register
     @udp = nil
-    @codec = LogStash::Codecs::IdentityMapCodec.new(@codec)
+    if need_identity_map?
+      @codec = LogStash::Codecs::IdentityMapCodec.new(@codec)
+    end
   end # def register
 
   public
@@ -95,10 +97,18 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
       while true
         payload, client = @input_to_worker.pop
 
-        @codec.decode(payload, identity(client)) do |event|
-          decorate(event)
-          event.set("host", client[3]) if event.get("host").nil?
-          @output_queue.push(event)
+        if need_identity_map?
+          @codec.decode(payload, identity(client)) do |event|
+            decorate(event)
+            event.set("host", client[3]) if event.get("host").nil?
+            @output_queue.push(event)
+          end
+        else
+          @codec.decode(payload) do |event|
+            decorate(event)
+            event.set("host", client[3]) if event.get("host").nil?
+            @output_queue.push(event)
+          end
         end
       end
     rescue => e
@@ -118,6 +128,19 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
 
   def identity(client)
     [client[3], client[1]].compact.join("-")
+  end
+
+  def need_identity_map?
+    case @codec
+    when LogStash::Codecs::Netflow
+      true
+    when LogStash::Codecs::IdentityMapCodec
+      true
+    when LogStash::Codecs::Multiline
+      true
+    else
+      false
+    end
   end
 
 end # class LogStash::Inputs::Udp
