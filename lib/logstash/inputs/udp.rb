@@ -2,6 +2,8 @@
 require "date"
 require "logstash/inputs/base"
 require "logstash/codecs/identity_map_codec"
+require "logstash/codecs/multiline"
+require "logstash/codecs/netflow"
 require "logstash/namespace"
 require "socket"
 require "stud/interval"
