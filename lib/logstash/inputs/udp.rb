@@ -1,6 +1,7 @@
 # encoding: utf-8
 require "date"
 require "logstash/inputs/base"
+require "logstash/codecs/identity_map_codec"
 require "logstash/namespace"
 require "socket"
 require "stud/interval"
@@ -40,6 +41,7 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
   public
   def register
     @udp = nil
+    @codec = LogStash::Codecs::IdentityMapCodec.new(@codec)
   end # def register
 
   public
@@ -93,7 +95,7 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
       while true
         payload, client = @input_to_worker.pop
 
-        @codec.decode(payload) do |event|
+        @codec.decode(payload, identity(client)) do |event|
           decorate(event)
           event.set("host", client[3]) if event.get("host").nil?
           @output_queue.push(event)
@@ -112,6 +114,10 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
   public
   def stop
     @udp.close rescue nil
+  end
+
+  def identity(client)
+    [client[3], client[1]].compact.join("-")
   end
 
 end # class LogStash::Inputs::Udp
