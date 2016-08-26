@@ -75,10 +75,16 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
 
     while !stop?
       next if IO.select([@udp], [], [], 0.5).nil?
-      #collect datagram message and add to queue
-      payload, client = @udp.recvfrom_nonblock(@buffer_size)
-      next if payload.empty?
-      @input_to_worker.push([payload, client])
+      # collect datagram messages and add to inputworker queue
+      @queue_size.times {
+        begin
+          payload, client = @udp.recvfrom_nonblock(@buffer_size)
+          break if payload.empty?
+          @input_to_worker.push([payload, client])
+        rescue IO::EAGAINWaitReadable
+          break
+        end
+      }
     end
   ensure
     if @udp
