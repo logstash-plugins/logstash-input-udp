@@ -24,6 +24,12 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
   # The maximum packet size to read from the network
   config :buffer_size, :validate => :number, :default => 65536
 
+  # The socket receive buffer size in bytes.
+  # If option is not set, the operating system default is used.
+  # The operating system will use the max allowed value if receive_buffer_size is larger than allowed.
+  # Consult your operating system documentation if you need to increase this max allowed value.
+  config :receive_buffer_size, :validate => :number
+
   # Number of threads processing packets
   config :workers, :validate => :number, :default => 2
 
@@ -64,7 +70,17 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
     end
 
     @udp = UDPSocket.new(Socket::AF_INET)
+    # set socket receive buffer size if configured
+    if @receive_buffer_size
+      @udp.setsockopt(Socket::SOL_SOCKET, Socket::SO_RCVBUF, @receive_buffer_size)
+    end
+    rcvbuf = @udp.getsockopt(Socket::SOL_SOCKET, Socket::SO_RCVBUF).unpack("i")[0]
+    if @receive_buffer_size and rcvbuf != @receive_buffer_size
+      @logger.warn("Unable to set receive_buffer_size to desired size. Requested #{@receive_buffer_size} but obtained #{rcvbuf} bytes.")
+    end
+
     @udp.bind(@host, @port)
+    @logger.info("UDP listener started", :address => "#{@host}:#{@port}", :receive_buffer_size => "#{rcvbuf}", :queue_size => "#{@queue_size}")
 
     @input_to_worker = SizedQueue.new(@queue_size)
 
