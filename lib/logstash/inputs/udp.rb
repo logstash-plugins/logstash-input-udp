@@ -75,7 +75,7 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
       @udp.setsockopt(Socket::SOL_SOCKET, Socket::SO_RCVBUF, @receive_buffer_bytes)
     end
     rcvbuf = @udp.getsockopt(Socket::SOL_SOCKET, Socket::SO_RCVBUF).unpack("i")[0]
-    if @receive_buffer_bytes and rcvbuf != @receive_buffer_bytes
+    if @receive_buffer_bytes && rcvbuf != @receive_buffer_bytes
       @logger.warn("Unable to set receive_buffer_bytes to desired size. Requested #{@receive_buffer_bytes} but obtained #{rcvbuf} bytes.")
     end
 
