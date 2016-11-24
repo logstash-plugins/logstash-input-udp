@@ -1,3 +1,6 @@
+## 3.1.0
+  - Add "receive_buffer_bytes" config setting to optionally set socket receive buffer size
+
 ## 3.0.3
   - fix performance regression calling IO.select for every packet #21
 
