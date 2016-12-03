@@ -45,29 +45,7 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
 
   public
   def register
-    @udp = nil
-  end # def register
-
-  public
-  def run(output_queue)
-  @output_queue = output_queue
-    begin
-      # udp server
-      udp_listener(output_queue)
-    rescue => e
-      @logger.warn("UDP listener died", :exception => e, :backtrace => e.backtrace)
-      Stud.stoppable_sleep(5) { stop? }
-      retry unless stop?
-    end # begin
-  end # def run
-
-  private
-  def udp_listener(output_queue)
     @logger.info("Starting UDP listener", :address => "#{@host}:#{@port}")
-
-    if @udp && ! @udp.closed?
-      @udp.close
-    end
 
     @udp = UDPSocket.new(Socket::AF_INET)
     # set socket receive buffer size if configured
@@ -83,6 +61,11 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
     @logger.info("UDP listener started", :address => "#{@host}:#{@port}", :receive_buffer_bytes => "#{rcvbuf}", :queue_size => "#{@queue_size}")
 
     @input_to_worker = SizedQueue.new(@queue_size)
+  end # def register
+
+  public
+  def run(output_queue)
+    @output_queue = output_queue
 
     @input_workers = @workers.times do |i|
       @logger.debug("Starting UDP worker thread", :worker => i)

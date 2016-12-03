@@ -14,15 +14,6 @@ module LogStash::Inputs::Test
       socket.connect(host, port)
     end
 
-    def send(msg="")
-      begin
-        send(msg)
-      rescue Exception => e
-        puts "send.exception", e
-        retry
-      end
-    end
-
     def send(msg)
       socket.connect(host, port) if socket.closed?
       socket.send(msg, 0)

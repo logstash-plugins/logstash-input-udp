@@ -4,7 +4,7 @@ require_relative "../support/client"
 
 describe LogStash::Inputs::Udp do
 
-  before do
+  before :all do
     srand(RSpec.configuration.seed)
   end
 
