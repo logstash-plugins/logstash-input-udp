@@ -1,3 +1,6 @@
+## 3.1.2
+  - Fix some documentation issues
+
 ## 3.1.0
   - Add "receive_buffer_bytes" config setting to optionally set socket receive buffer size
 
