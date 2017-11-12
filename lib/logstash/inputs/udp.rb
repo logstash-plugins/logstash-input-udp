@@ -82,7 +82,11 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
       @udp.close
     end
 
-    @udp = UDPSocket.new(Socket::AF_INET)
+    if IPAddr.new(@host).ipv6?
+      @udp = UDPSocket.new(Socket::AF_INET6)
+    elsif IPAddr.new(@host).ipv4?
+      @udp = UDPSocket.new(Socket::AF_INET)
+    end
     # set socket receive buffer size if configured
     if @receive_buffer_bytes
       @udp.setsockopt(Socket::SOL_SOCKET, Socket::SO_RCVBUF, @receive_buffer_bytes)

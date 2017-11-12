@@ -11,7 +11,8 @@ describe LogStash::Inputs::Udp do
   let!(:helper) { UdpHelpers.new }
   let(:client) { LogStash::Inputs::Test::UDPClient.new(port) }
   let(:port) { rand(1024..65535) }
-  let(:config) { { "port" => port } }
+  let(:host) { "0.0.0.0" }
+  let(:config) { { "port" => port, "host" => host } }
   subject { LogStash::Plugin.lookup("input","udp").new(config) }
 
   after :each do
@@ -25,26 +26,38 @@ describe LogStash::Inputs::Udp do
   end
 
   describe "receive" do
-    let(:nevents) { 10 }
+  	shared_examples "receiving" do
+      before(:each) do
+        subject.register
+      end
 
-    let(:events) do
-      helper.input(subject, nevents) do
-        nevents.times do |i|
-          client.send("msg #{i}")
+      let(:nevents) { 10 }
+
+      let(:events) do
+        helper.input(subject, nevents) do
+          nevents.times do |i|
+            client.send("msg #{i}")
+          end
+        end
+      end
+
+      it "should receive events been generated" do
+        expect(events.size).to be(nevents)
+        messages = events.map { |event| event.get("message")}
+        messages.each do |message|
+          expect(message).to match(/msg \d+/)
         end
       end
     end
 
-    before(:each) do
-      subject.register
+    context "ipv4" do
+      let(:client) { LogStash::Inputs::Test::UDPClient.new(port, "127.0.0.1") }
+      include_examples "receiving"
     end
-
-    it "should receive events been generated" do
-      expect(events.size).to be(nevents)
-      messages = events.map { |event| event.get("message")}
-      messages.each do |message|
-        expect(message).to match(/msg \d+/)
-      end
+    context "ipv6" do
+      let(:host) { "::1" }
+      let(:client) { LogStash::Inputs::Test::UDPClient.new(port, "::1") }
+      include_examples "receiving"
     end
   end
 
