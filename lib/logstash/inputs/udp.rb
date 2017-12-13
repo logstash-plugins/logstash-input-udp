@@ -37,6 +37,8 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
   # before packets will start dropping.
   config :queue_size, :validate => :number, :default => 2000
 
+  HOST_FIELD = "host".freeze
+
   public
   def initialize(params)
     super
@@ -86,7 +88,7 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
 
     @input_workers = @workers.times do |i|
       @logger.debug("Starting UDP worker thread", :worker => i)
-      Thread.new { inputworker(i) }
+      Thread.new(i, @codec.clone) { |i, codec| inputworker(i, codec) }
     end
 
     while !stop?
@@ -109,17 +111,15 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
     end
   end # def udp_listener
 
-  def inputworker(number)
+  def inputworker(number, codec)
     LogStash::Util::set_thread_name("<udp.#{number}")
     begin
       while true
         payload, client = @input_to_worker.pop
+        host = client[3]
 
-        @codec.decode(payload) do |event|
-          decorate(event)
-          event.set("host", client[3]) if event.get("host").nil?
-          @output_queue.push(event)
-        end
+        codec.decode(payload) { |event| push_decoded_event(host, event) }
+        codec.flush { |event| push_decoded_event(host, event) }
       end
     rescue => e
       @logger.error("Exception in inputworker", "exception" => e, "backtrace" => e.backtrace)
@@ -134,6 +134,14 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
   public
   def stop
     @udp.close rescue nil
+  end
+
+  private
+
+  def push_decoded_event(host, event)
+    decorate(event)
+    event.set(HOST_FIELD, host) if event.get(HOST_FIELD).nil?
+    @output_queue.push(event)
   end
 
 end # class LogStash::Inputs::Udp

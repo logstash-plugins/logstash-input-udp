@@ -9,8 +9,10 @@ describe LogStash::Inputs::Udp do
   end
 
   let!(:helper) { UdpHelpers.new }
-  let(:port)   { rand(1024..65535) }
-  subject      { LogStash::Plugin.lookup("input", "udp").new({ "port" => port }) }
+  let(:client) { LogStash::Inputs::Test::UDPClient.new(port) }
+  let(:port) { rand(1024..65535) }
+  let(:config) { { "port" => port } }
+  subject { LogStash::Plugin.lookup("input","udp").new(config) }
 
   after :each do
     subject.close rescue nil
@@ -23,8 +25,6 @@ describe LogStash::Inputs::Udp do
   end
 
   describe "receive" do
-
-    let(:client) { LogStash::Inputs::Test::UDPClient.new(port) }
     let(:nevents) { 10 }
 
     let(:events) do
@@ -46,10 +46,32 @@ describe LogStash::Inputs::Udp do
         expect(message).to match(/msg \d+/)
       end
     end
+  end
 
+  describe "multiple lines per datagram using line codec" do
+    # 3 workers for 3 datagrams send below
+    let(:config) { { "port" => port, "workers" => 3, "codec" => "line" } }
+
+    let(:events) do
+      helper.input(subject, 8) do
+        client.send("line1\nline2")
+        client.send("line3\nline4")
+        client.send("line5\nline6\nline7\nline8")
+      end
+    end
+
+    before(:each) do
+      subject.register
+    end
+
+    it "should receive events been generated" do
+      expect(events.size).to be(8)
+      messages = events.map { |event| event.get("message") }.sort # important to sort here because order is unpredictable
+      messages.each_index {|i| expect(messages[i]).to match("line#{i + 1}")}
+    end
   end
 
   it_behaves_like "an interruptible input plugin" do
-    let(:config) { { "port" => port } }
+    # see https://github.com/elastic/logstash-devutils/blob/9c4a1fbf2b0c4547e428c5a40ed84f60aad17f97/lib/logstash/devutils/rspec/shared_examples.rb
   end
 end

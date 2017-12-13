@@ -4,7 +4,6 @@ require "socket"
 module LogStash::Inputs::Test
 
   class UDPClient
-
     attr_reader :host, :port, :socket
 
     def initialize(port)
@@ -14,24 +13,18 @@ module LogStash::Inputs::Test
       socket.connect(host, port)
     end
 
-    def send(msg="")
+    def send(msg)
       begin
-        send(msg)
-      rescue Exception => e
-        puts "send.exception", e
+        socket.connect(host, port) if socket.closed?
+        socket.send(msg, 0)
+      rescue  => e
+        puts("send exception, retrying", e.inspect)
         retry
       end
     end
 
-    def send(msg)
-      socket.connect(host, port) if socket.closed?
-      socket.send(msg, 0)
-    end
-
     def close
-      socket.close
+      socket.close unless socket.closed?
     end
-
   end
-
 end
