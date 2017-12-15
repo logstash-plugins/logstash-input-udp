@@ -39,20 +39,18 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
 
   HOST_FIELD = "host".freeze
 
-  public
   def initialize(params)
     super
     BasicSocket.do_not_reverse_lookup = true
-  end # def initialize
+  end
 
-  public
   def register
     @udp = nil
-  end # def register
+  end
 
-  public
   def run(output_queue)
-  @output_queue = output_queue
+    @output_queue = output_queue
+
     begin
       # udp server
       udp_listener(output_queue)
@@ -60,14 +58,27 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
       @logger.warn("UDP listener died", :exception => e, :backtrace => e.backtrace)
       Stud.stoppable_sleep(5) { stop? }
       retry unless stop?
-    end # begin
-  end # def run
+    end
+  end
+
+  def close
+    if @udp && !@udp.closed?
+      @udp.close rescue ignore_close_and_log($!)
+    end
+  end
+
+  def stop
+    if @udp && !@udp.closed?
+      @udp.close rescue ignore_close_and_log($!)
+    end
+  end
 
   private
+
   def udp_listener(output_queue)
     @logger.info("Starting UDP listener", :address => "#{@host}:#{@port}")
 
-    if @udp && ! @udp.closed?
+    if @udp && !@udp.closed?
       @udp.close
     end
 
@@ -94,7 +105,7 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
     while !stop?
       next if IO.select([@udp], [], [], 0.5).nil?
       # collect datagram messages and add to inputworker queue
-      @queue_size.times {
+      @queue_size.times do
         begin
           payload, client = @udp.recvfrom_nonblock(@buffer_size)
           break if payload.empty?
@@ -102,17 +113,18 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
         rescue IO::EAGAINWaitReadable
           break
         end
-      }
+      end
     end
   ensure
     if @udp
-      @udp.close_read rescue nil
-      @udp.close_write rescue nil
+      @udp.close_read rescue ignore_close_and_log($!)
+      @udp.close_write rescue ignore_close_and_log($!)
     end
-  end # def udp_listener
+  end
 
   def inputworker(number, codec)
     LogStash::Util::set_thread_name("<udp.#{number}")
+
     begin
       while true
         payload, client = @input_to_worker.pop
@@ -124,19 +136,7 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
     rescue => e
       @logger.error("Exception in inputworker", "exception" => e, "backtrace" => e.backtrace)
     end
-  end # def inputworker
-
-  public
-  def close
-    @udp.close rescue nil
   end
-
-  public
-  def stop
-    @udp.close rescue nil
-  end
-
-  private
 
   def push_decoded_event(host, event)
     decorate(event)
@@ -144,4 +144,7 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
     @output_queue.push(event)
   end
 
-end # class LogStash::Inputs::Udp
+  def ignore_close_and_log(e)
+    @logger.debug("ignoring close exception", "exception" => e)
+  end
+end
