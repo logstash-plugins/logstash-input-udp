@@ -1,3 +1,6 @@
+## 3.2.0
+  - Clone codec per worker. See https://github.com/logstash-plugins/logstash-input-udp/pull/32
+
 ## 3.1.3
   - Update gemspec summary
 
