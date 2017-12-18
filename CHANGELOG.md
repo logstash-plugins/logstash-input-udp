@@ -1,3 +1,6 @@
+## 3.2.1
+  - Code cleanup. See https://github.com/logstash-plugins/logstash-input-udp/pull/33
+
 ## 3.2.0
   - Clone codec per worker. See https://github.com/logstash-plugins/logstash-input-udp/pull/32
 
