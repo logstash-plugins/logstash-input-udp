@@ -1,3 +1,6 @@
+## 3.3.1
+  - Docs: Set the default_codec doc attribute.
+
 ## 3.3.0
   - Add metrics support for events, operations, connections and errors produced during execution. #34
   - Fix support for IPv6 #31
