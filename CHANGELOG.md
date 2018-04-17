@@ -1,3 +1,6 @@
+## 3.3.2
+  - Fix missing require for the ipaddr library.
+
 ## 3.3.1
   - Docs: Set the default_codec doc attribute.
 
