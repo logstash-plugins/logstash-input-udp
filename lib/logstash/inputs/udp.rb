@@ -99,7 +99,7 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
     
     @udp.bind(java.net.InetSocketAddress.new(@host, @port))
 
-    @udp.setSoTimeout(0.1) # Timeout after 0.5s on each read
+    @udp.setSoTimeout(10) # only block for 10ms per read
 
     @logger.info("UDP listener started", :address => "#{@host}:#{@port}", :receive_buffer_bytes => "#{@receive_buffer_bytes}", :queue_size => "#{@queue_size}")
 
@@ -115,15 +115,17 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
     packet_buf = @buffer_size.times.map { 0 }.to_java :byte
     packet = java.net.DatagramPacket.new(packet_buf, packet_buf.length, java.net.InetAddress.getByName(@host), @port)
     while !stop?
-      begin
-        @udp.receive(packet)
-      rescue java.net.SocketTimeoutException
-        next
-      end
+      100.times do # No need to check the stop? lock every loop, we can do it once per second
+        begin
+          @udp.receive(packet)
+        rescue java.net.SocketTimeoutException
+          next
+        end
 
-      # Create a ruby string of the correct size
-      packet_str = packet.getData[0...packet.getLength].to_s
-      @input_to_worker.push([packet_str, packet.getAddress])
+        # Create a ruby string of the correct size
+        packet_str = packet.getData[0...packet.getLength].to_s
+        @input_to_worker.push([packet_str, packet.getAddress])
+      end
     end
   ensure
     if @udp && !@udp.isClosed
