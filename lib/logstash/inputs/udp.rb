@@ -65,14 +65,14 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
   end
 
   def close
-    if @udp && !@udp.closed?
-      @udp.close rescue ignore_close_and_log($!)
+    if @udp && !@udp.isClosed
+      @udp.close()
     end
   end
 
   def stop
-    if @udp && !@udp.closed?
-      @udp.close rescue ignore_close_and_log($!)
+    if @udp && !@udp.isClosed
+      @udp.close()
     end
   end
 
@@ -81,26 +81,27 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
   def udp_listener(output_queue)
     @logger.info("Starting UDP listener", :address => "#{@host}:#{@port}")
 
-    if @udp && !@udp.closed?
+    if @udp && !@udp.isClosed
       @udp.close
     end
 
-    if IPAddr.new(@host).ipv6?
-      @udp = UDPSocket.new(Socket::AF_INET6)
-    elsif IPAddr.new(@host).ipv4?
-      @udp = UDPSocket.new(Socket::AF_INET)
-    end
+    # Bind to nil to defer binding until later
+    @udp = java.net.DatagramSocket.new(nil)
+
     # set socket receive buffer size if configured
     if @receive_buffer_bytes
-      @udp.setsockopt(Socket::SOL_SOCKET, Socket::SO_RCVBUF, @receive_buffer_bytes)
-    end
-    rcvbuf = @udp.getsockopt(Socket::SOL_SOCKET, Socket::SO_RCVBUF).unpack("i")[0]
-    if @receive_buffer_bytes && rcvbuf != @receive_buffer_bytes
-      @logger.warn("Unable to set receive_buffer_bytes to desired size. Requested #{@receive_buffer_bytes} but obtained #{rcvbuf} bytes.")
-    end
+      @udp.setReceiveBufferSize(@receive_buffer_bytes)
 
-    @udp.bind(@host, @port)
-    @logger.info("UDP listener started", :address => "#{@host}:#{@port}", :receive_buffer_bytes => "#{rcvbuf}", :queue_size => "#{@queue_size}")
+      if @udp.getReceiveBufferBytes != @receive_buffer_bytes
+        @logger.warn("Unable to set receive_buffer_bytes to desired size. Requested #{@receive_buffer_bytes} but obtained #{rcvbuf} bytes.")
+      end
+    end
+    
+    @udp.bind(java.net.InetSocketAddress.new(@host, @port))
+
+    @udp.setSoTimeout(0.1) # Timeout after 0.5s on each read
+
+    @logger.info("UDP listener started", :address => "#{@host}:#{@port}", :receive_buffer_bytes => "#{@receive_buffer_bytes}", :queue_size => "#{@queue_size}")
 
     @input_to_worker = SizedQueue.new(@queue_size)
     metric.gauge(:queue_size, @queue_size)
@@ -111,23 +112,22 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
       Thread.new(i, @codec.clone) { |i, codec| inputworker(i, codec) }
     end
 
+    packet_buf = @buffer_size.times.map { 0 }.to_java :byte
+    packet = java.net.DatagramPacket.new(packet_buf, packet_buf.length, java.net.InetAddress.getByName(@host), @port)
     while !stop?
-      next if IO.select([@udp], [], [], 0.5).nil?
-      # collect datagram messages and add to inputworker queue
-      @queue_size.times do
-        begin
-          payload, client = @udp.recvfrom_nonblock(@buffer_size)
-          break if payload.empty?
-          @input_to_worker.push([payload, client])
-        rescue IO::EAGAINWaitReadable
-          break
-        end
+      begin
+        @udp.receive(packet)
+      rescue java.net.SocketTimeoutException
+        next
       end
+
+      # Create a ruby string of the correct size
+      packet_str = packet.getData[0...packet.getLength].to_s
+      @input_to_worker.push([packet_str, packet.getAddress])
     end
   ensure
-    if @udp
-      @udp.close_read rescue ignore_close_and_log($!)
-      @udp.close_write rescue ignore_close_and_log($!)
+    if @udp && !@udp.isClosed
+      @udp.close
     end
   end
 
@@ -136,8 +136,7 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
 
     begin
       while true
-        payload, client = @input_to_worker.pop
-        host = client[3]
+        payload, host = @input_to_worker.pop
 
         codec.decode(payload) { |event| push_decoded_event(host, event) }
         codec.flush { |event| push_decoded_event(host, event) }
