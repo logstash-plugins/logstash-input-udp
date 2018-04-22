@@ -92,8 +92,9 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
     if @receive_buffer_bytes
       @udp.setReceiveBufferSize(@receive_buffer_bytes)
 
-      if @udp.getReceiveBufferBytes != @receive_buffer_bytes
-        @logger.warn("Unable to set receive_buffer_bytes to desired size. Requested #{@receive_buffer_bytes} but obtained #{rcvbuf} bytes.")
+      actual_receive_buffer_bytes = @udp.getReceiveBufferBytes
+      if  actual_receive_buffer_bytes != @receive_buffer_bytes
+        @logger.warn("Unable to set receive_buffer_bytes to desired size. Requested #{@receive_buffer_bytes} but obtained #{actual_receive_buffer_bytes} bytes.")
       end
     end
     
@@ -115,7 +116,7 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
     packet_buf = @buffer_size.times.map { 0 }.to_java :byte
     packet = java.net.DatagramPacket.new(packet_buf, packet_buf.length, java.net.InetAddress.getByName(@host), @port)
     while !stop?
-      100.times do # No need to check the stop? lock every loop, we can do it once per second
+      100.times do # No need to check the stop? 
         begin
           @udp.receive(packet)
         rescue java.net.SocketTimeoutException
