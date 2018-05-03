@@ -154,7 +154,8 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
   # message will use 64kb
   if RUBY_VERSION.match(/^2/)
     def push_data(payload, client)
-      @input_to_worker.push([payload.b, client])
+      payload = payload.b.force_encoding(Encoding::UTF_8)
+      @input_to_worker.push([payload, client])
     end
   else
     def push_data(payload, client)
