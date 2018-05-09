@@ -1,3 +1,6 @@
+## 3.3.3
+  - Work around jruby/jruby#5148 by cloning messages on jruby 9k, therefore resizing the underlying byte buffer
+
 ## 3.3.2
   - Fix missing require for the ipaddr library.
 

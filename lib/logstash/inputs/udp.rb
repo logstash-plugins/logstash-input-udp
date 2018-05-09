@@ -118,7 +118,7 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
         begin
           payload, client = @udp.recvfrom_nonblock(@buffer_size)
           break if payload.empty?
-          @input_to_worker.push([payload, client])
+          push_data(payload, client)
         rescue IO::EAGAINWaitReadable
           break
         end
@@ -145,6 +145,21 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
     rescue => e
       @logger.error("Exception in inputworker", "exception" => e, "backtrace" => e.backtrace)
       @metric_errors.increment(:worker)
+    end
+  end
+
+  # work around jruby/jruby#5148
+  # For jruby 9k (ruby >= 2.x) we need to truncate the buffer
+  # after reading from the socket otherwise each
+  # message will use 64kb
+  if RUBY_VERSION.match(/^2/)
+    def push_data(payload, client)
+      payload = payload.b.force_encoding(Encoding::UTF_8)
+      @input_to_worker.push([payload, client])
+    end
+  else
+    def push_data(payload, client)
+      @input_to_worker.push([payload, client])
     end
   end
 
