@@ -38,7 +38,7 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
   # before packets will start dropping.
   config :queue_size, :validate => :number, :default => 2000
 
-  HOST_FIELD = "host".freeze
+  IP_FIELD = "[@metadata][ip_address]".freeze
 
   def initialize(params)
     super
@@ -139,8 +139,8 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
         payload, client = @input_to_worker.pop
         host = client[3]
 
-        codec.decode(payload) { |event| push_decoded_event(host, event) }
-        codec.flush { |event| push_decoded_event(host, event) }
+        codec.decode(payload) { |event| push_decoded_event(ip_address, event) }
+        codec.flush { |event| push_decoded_event(ip_address, event) }
       end
     rescue => e
       @logger.error("Exception in inputworker", "exception" => e, "backtrace" => e.backtrace)
@@ -163,9 +163,9 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
     end
   end
 
-  def push_decoded_event(host, event)
+  def push_decoded_event(ip_address, event)
     decorate(event)
-    event.set(HOST_FIELD, host) if event.get(HOST_FIELD).nil?
+    event.set(IP_FIELD, ip_address) if event.get(IP_FIELD).nil?
     @output_queue.push(event)
     metric.increment(:events)
   end
