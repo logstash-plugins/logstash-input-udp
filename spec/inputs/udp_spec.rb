@@ -1,9 +1,19 @@
 # encoding: utf-8
 require_relative "../spec_helper"
 require_relative "../support/client"
+require "logstash/codecs/base"
+
+
+class LogStash::Codecs::Crash < LogStash::Codecs::Base
+  config_name "crash"
+
+  def decode(data)
+    raise("decode crash") if data == "crash"
+    yield LogStash::Event.new({"message" => data })
+  end
+end
 
 describe LogStash::Inputs::Udp do
-
   before do
     srand(RSpec.configuration.seed)
   end
@@ -86,5 +96,31 @@ describe LogStash::Inputs::Udp do
 
   it_behaves_like "an interruptible input plugin" do
     # see https://github.com/elastic/logstash-devutils/blob/9c4a1fbf2b0c4547e428c5a40ed84f60aad17f97/lib/logstash/devutils/rspec/shared_examples.rb
+  end
+
+  describe "worker should ignore codec exception" do
+    # see custom "crash" codec above which raises upon decoding the "crash" straing payload
+    let(:config) { { "port" => port, "workers" => 1, "codec" => "crash" } }
+
+    let(:events) do
+      helper.input(subject, 3) do
+        client.send("crash")
+        client.send("foo")
+        client.send("bar")
+        client.send("crash")
+        client.send("baz")
+      end
+    end
+
+    before(:each) do
+      subject.register
+    end
+
+    it "should receive events been generated" do
+      expect(events.size).to be(3)
+      expect(events[0].get("message")).to match("foo")
+      expect(events[1].get("message")).to match("bar")
+      expect(events[2].get("message")).to match("baz")
+    end
   end
 end

@@ -54,14 +54,27 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
   def run(output_queue)
     @output_queue = output_queue
 
+    @input_to_worker = SizedQueue.new(@queue_size)
+    metric.gauge(:queue_size, @queue_size)
+    metric.gauge(:workers, @workers)
+
+    @input_workers = (1..@workers).to_a.map do |i|
+      @logger.debug("Starting UDP worker thread", :worker => i)
+      Thread.new(i, @codec.clone) { |i, codec| inputworker(i, codec) }
+    end
+
     begin
       # udp server
       udp_listener(output_queue)
     rescue => e
-      @logger.warn("UDP listener died", :exception => e, :backtrace => e.backtrace)
+      @logger.error("UDP listener died", :exception => e, :backtrace => e.backtrace)
       @metric_errors.increment(:listener)
       Stud.stoppable_sleep(5) { stop? }
       retry unless stop?
+    ensure
+      # signal workers to end
+      @input_workers.size.times { @input_to_worker.push([:END, nil]) }
+      @input_workers.each { |thread| thread.join }
     end
   end
 
@@ -103,14 +116,6 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
     @udp.bind(@host, @port)
     @logger.info("UDP listener started", :address => "#{@host}:#{@port}", :receive_buffer_bytes => "#{rcvbuf}", :queue_size => "#{@queue_size}")
 
-    @input_to_worker = SizedQueue.new(@queue_size)
-    metric.gauge(:queue_size, @queue_size)
-    metric.gauge(:workers, @workers)
-
-    @input_workers = @workers.times do |i|
-      @logger.debug("Starting UDP worker thread", :worker => i)
-      Thread.new(i, @codec.clone) { |i, codec| inputworker(i, codec) }
-    end
 
     while !stop?
       next if IO.select([@udp], [], [], 0.5).nil?
@@ -135,17 +140,20 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
   def inputworker(number, codec)
     LogStash::Util::set_thread_name("<udp.#{number}")
 
-    begin
-      while true
+    while true
+      # a worker should never terminate from an exception, only when it receives the :END symbol
+      begin
         payload, client = @input_to_worker.pop
+        break if payload == :END
+
         ip_address = client[3]
 
         codec.decode(payload) { |event| push_decoded_event(ip_address, event) }
         codec.flush { |event| push_decoded_event(ip_address, event) }
+      rescue => e
+        @logger.error("Exception in inputworker", "exception" => e, "backtrace" => e.backtrace)
+        @metric_errors.increment(:worker)
       end
-    rescue => e
-      @logger.error("Exception in inputworker", "exception" => e, "backtrace" => e.backtrace)
-      @metric_errors.increment(:worker)
     end
   end
 
