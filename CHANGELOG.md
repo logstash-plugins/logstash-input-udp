@@ -1,3 +1,6 @@
+## 3.3.4
+  - Fixed input workers exception handling and shutdown handling [#44](https://github.com/logstash-plugins/logstash-input-udp/pull/44)
+
 ## 3.3.3
   - Work around jruby/jruby#5148 by cloning messages on jruby 9k, therefore resizing the underlying byte buffer
 
