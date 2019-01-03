@@ -16,5 +16,6 @@ matrix:
 install: true
 script: ci/build.sh
 before_script:
-  - echo 0 | sudo tee /proc/sys/net/ipv6/conf/all/disable_ipv6
+- echo 0 | sudo tee /proc/sys/net/ipv6/conf/all/disable_ipv6
 jdk: oraclejdk8
+before_install: gem install bundler -v '< 2'
