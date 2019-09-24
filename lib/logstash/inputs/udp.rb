@@ -41,6 +41,9 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
   # The name of the field where the source IP address will be stored
   config :source_ip_fieldname, :validate => :string, :default => 'host'
 
+  # Should the event's metadata be included?
+  config :metadata, :validate => :boolean, :default => false
+
   def initialize(params)
     super
     BasicSocket.do_not_reverse_lookup = true
@@ -147,8 +150,12 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
         break if payload == :END
 
         ip_address = client[3]
-
-        codec.decode(payload) { |event| push_decoded_event(ip_address, event) }
+        if @metadata
+          metadata_to_codec = {}
+          metadata_to_codec["port"] = client[1]
+          metadata_to_codec["host"] = client[3]
+        end
+        codec.decode(payload, metadata_to_codec) { |event| push_decoded_event(ip_address, event) }
         codec.flush { |event| push_decoded_event(ip_address, event) }
       rescue => e
         @logger.error("Exception in inputworker", "exception" => e, "backtrace" => e.backtrace)
