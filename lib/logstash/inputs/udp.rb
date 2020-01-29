@@ -151,9 +151,7 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
 
         ip_address = client[3]
         if @metadata
-          metadata_to_codec = {}
-          metadata_to_codec["port"] = client[1]
-          metadata_to_codec["host"] = client[3]
+          metadata_to_codec = { "port" => client[1], "host" => client[3] }
         end
         codec.decode(payload, metadata_to_codec) { |event| push_decoded_event(ip_address, event) }
         codec.flush { |event| push_decoded_event(ip_address, event) }
