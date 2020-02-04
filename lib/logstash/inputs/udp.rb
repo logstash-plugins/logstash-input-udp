@@ -150,10 +150,8 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
         break if payload == :END
 
         ip_address = client[3]
-        if @metadata
-          metadata_to_codec = { "port" => client[1], "host" => client[3] }
-        end
-        codec.decode(payload, metadata_to_codec) { |event| push_decoded_event(ip_address, event) }
+        optional_metadata = @metadata ? [{"port" => client[1], "host" => client[3]}] : []
+        codec.decode(payload, *optional_metadata) { |event| push_decoded_event(ip_address, event) }
         codec.flush { |event| push_decoded_event(ip_address, event) }
       rescue => e
         @logger.error("Exception in inputworker", "exception" => e, "backtrace" => e.backtrace)
