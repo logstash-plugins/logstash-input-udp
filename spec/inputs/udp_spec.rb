@@ -1,5 +1,6 @@
 # encoding: utf-8
 require_relative "../spec_helper"
+require "logstash/devutils/rspec/shared_examples"
 require_relative "../support/client"
 require "logstash/codecs/base"
 
