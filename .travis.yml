@@ -1,23 +1,4 @@
----
-sudo: false
-language: ruby
-cache: bundler
-matrix:
-  include:
-  - rvm: jruby-9.1.13.0
-    env: LOGSTASH_BRANCH=master
-  - rvm: jruby-9.1.13.0
-    env: LOGSTASH_BRANCH=7.0
-  - rvm: jruby-9.1.13.0
-    env: LOGSTASH_BRANCH=6.7
-  - rvm: jruby-9.1.13.0
-    env: LOGSTASH_BRANCH=6.6
-  - rvm: jruby-1.7.27
-    env: LOGSTASH_BRANCH=5.6
-  fast_finish: true
-install: true
-script: ci/build.sh
-before_script:
-- echo 0 | sudo tee /proc/sys/net/ipv6/conf/all/disable_ipv6
-jdk: openjdk8
-before_install: gem install bundler -v '< 2'
+import:
+- logstash-plugins/.ci:travis/defaults.yml@travis_refactor
+- logstash-plugins/.ci:travis/matrix.yml@travis_refactor
+- logstash-plugins/.ci:travis/exec.yml@travis_refactor
