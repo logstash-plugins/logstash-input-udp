@@ -2,5 +2,3 @@ import:
 - logstash-plugins/.ci:travis/defaults.yml@travis_refactor
 - logstash-plugins/.ci:travis/matrix.yml@travis_refactor
 - logstash-plugins/.ci:travis/exec.yml@travis_refactor
-before_script:
-- echo 0 | sudo tee /proc/sys/net/ipv6/conf/all/disable_ipv6
