@@ -1,6 +1,6 @@
 # Logstash Plugin
 
-[![Travis Build Status](https://travis-ci.org/logstash-plugins/logstash-input-udp.svg)](https://travis-ci.org/logstash-plugins/logstash-input-udp)
+[![Travis Build Status](https://travis-ci.com/logstash-plugins/logstash-input-udp.svg)](https://travis-ci.com/logstash-plugins/logstash-input-udp)
 
 This is a plugin for [Logstash](https://github.com/elastic/logstash).
 
