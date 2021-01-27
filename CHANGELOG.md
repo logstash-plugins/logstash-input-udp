@@ -1,3 +1,7 @@
+## 3.4.0
+  - Added ECS compatibility mode (`disabled` and `v1`) to rename ip source address in a ECS compliant name [#50](https://github.com/logstash-plugins/logstash-input-udp/pull/50)
+  - Fixed integration tests for IPv6 downgrading Docker to version 2.4 [#51](https://github.com/logstash-plugins/logstash-input-udp/pull/51)
+
 ## 3.3.4
   - Fixed input workers exception handling and shutdown handling [#44](https://github.com/logstash-plugins/logstash-input-udp/pull/44)
 

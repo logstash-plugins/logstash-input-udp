@@ -5,12 +5,16 @@ require "logstash/namespace"
 require "socket"
 require "stud/interval"
 require "ipaddr"
+require "logstash/plugin_mixins/ecs_compatibility_support"
 
 # Read messages as events over the network via udp. The only required
 # configuration item is `port`, which specifies the udp port logstash
 # will listen on for event streams.
 #
 class LogStash::Inputs::Udp < LogStash::Inputs::Base
+  # adds ecs_compatibility config which could be :disabled or :v1
+  include LogStash::PluginMixins::ECSCompatibilitySupport(:disabled,:v1)
+
   config_name "udp"
 
   default :codec, "plain"
@@ -39,7 +43,7 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
   config :queue_size, :validate => :number, :default => 2000
 
   # The name of the field where the source IP address will be stored
-  config :source_ip_fieldname, :validate => :string, :default => 'host'
+  config :source_ip_fieldname, :validate => :string
 
   def initialize(params)
     super
@@ -49,6 +53,15 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
   def register
     @udp = nil
     @metric_errors = metric.namespace(:errors)
+    if source_ip_fieldname.nil?
+      # define ecs name mapping
+      @field_source_ip = ecs_select[disabled: "host", v1: "[host][ip]"]
+    else
+      @field_source_ip = source_ip_fieldname
+      if (ecs_compatibility != :disabled)
+        @logger.warn("'source_ip_fieldname' is user customized, please check is has an ECS compatible name ")
+      end
+    end
   end # def register
 
   def run(output_queue)
@@ -174,7 +187,7 @@ class LogStash::Inputs::Udp < LogStash::Inputs::Base
 
   def push_decoded_event(ip_address, event)
     decorate(event)
-    event.set(source_ip_fieldname, ip_address) if event.get(source_ip_fieldname).nil?
+    event.set(@field_source_ip, ip_address) if event.get(@field_source_ip).nil?
     @output_queue.push(event)
     metric.increment(:events)
   end

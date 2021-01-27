@@ -72,6 +72,55 @@ describe LogStash::Inputs::Udp do
     end
   end
 
+  shared_examples "use hostname field with ECS" do |ecs_compatibility, field_name|
+    let(:config) { { "port" => port, "workers" => 1, "ecs_compatibility" => ecs_compatibility} }
+    let(:localhost) { "127.0.0.1" }
+    let(:client) { LogStash::Inputs::Test::UDPClient.new(port, localhost) }
+
+    let(:events) do
+      helper.input(subject, 1) do
+        client.send("line1")
+      end
+    end
+
+    before(:each) do
+      subject.register
+    end
+
+    it "should receive event with source_ip_fieldname as '#{field_name}' when ecs #{ecs_compatibility}" do
+      expect(events.size).to be(1)
+      message = events.last
+      expect(message.get(field_name)).to eq(client.host)
+    end
+  end
+
+  it_behaves_like "use hostname field with ECS", :disabled, "host"
+  it_behaves_like "use hostname field with ECS", :v1, "[host][ip]"
+
+
+
+  describe "uses custom hostname field when ECS is enabled" do
+    let(:config) { { "port" => port, "workers" => 1, "ecs_compatibility" => :v1, "source_ip_fieldname" => "custom_host_field"} }
+    let(:localhost) { "127.0.0.1" }
+    let(:client) { LogStash::Inputs::Test::UDPClient.new(port, localhost) }
+
+    let(:events) do
+      helper.input(subject, 1) do
+        client.send("line1")
+      end
+    end
+
+    before(:each) do
+      subject.register
+    end
+
+    it "should receive event with user defined source_ip_fieldname" do
+      expect(events.size).to be(1)
+      message = events.last
+      expect(message.get(config['source_ip_fieldname'])).to eq(client.host)
+    end
+  end
+
   describe "multiple lines per datagram using line codec" do
     # 3 workers for 3 datagrams send below
     let(:config) { { "port" => port, "workers" => 3, "codec" => "line" } }
