@@ -31,8 +31,9 @@ will listen on for event streams.
 
 This plugin adds a field containing the source IP address of the UDP packet.
 By default, the IP address is stored in the host field.
-When ECS is enabled (in <<plugins-{type}s-{plugin}-ecs_compatibility>>), the
-source IP address is stored in the [host][ip] field.
+When {ecs-ref}[Elastic Common Schema (ECS)] is enabled (in
+<<plugins-{type}s-{plugin}-ecs_compatibility>>), the source IP address is stored
+in the [host][ip] field.
 
 You can customize the field name using the <<plugins-{type}s-{plugin}-source_ip_fieldname>>.
 See <<plugins-{type}s-{plugin}-ecs_compatibility>> for more information.
@@ -80,7 +81,8 @@ The maximum packet size to read from the network
 ** When Logstash provides a `pipeline.ecs_compatibility` setting, its value is used as the default
 ** Otherwise, the default value is `disabled`.
 
-Controls this plugin's compatibility with the https://www.elastic.co/guide/en/ecs/current/index.html[Elastic Common Schema (ECS)].
+Controls this plugin's compatibility with the {ecs-ref}[Elastic Common Schema (ECS)].
+
 The value of this setting affects the placement of a TCP connection's metadata on events.
 
 .Metadata Location by `ecs_compatibility` value
