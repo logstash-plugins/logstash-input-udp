@@ -144,7 +144,7 @@ Example:
 [source,ruby]
     input {
       udp {
-        source_ip_fieldname => "[appliace][monitoring][ip]"
+        source_ip_fieldname => "[appliance][monitoring][ip]"
       }
     }
 
