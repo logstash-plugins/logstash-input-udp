@@ -1,3 +1,6 @@
+## 3.5.0
+  - Added ECS v8 support as an alias to the ECS v1 implementation
+
 ## 3.4.1
   - [DOC] Fixed typo in code sample [#54](https://github.com/logstash-plugins/logstash-input-udp/pull/54)
 

@@ -13,7 +13,7 @@ require "logstash/plugin_mixins/ecs_compatibility_support"
 #
 class LogStash::Inputs::Udp < LogStash::Inputs::Base
   # adds ecs_compatibility config which could be :disabled or :v1
-  include LogStash::PluginMixins::ECSCompatibilitySupport(:disabled,:v1)
+  include LogStash::PluginMixins::ECSCompatibilitySupport(:disabled, :v1, :v8 => :v1)
 
   config_name "udp"
 
