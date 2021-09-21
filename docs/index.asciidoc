@@ -100,6 +100,15 @@ The value of this setting affects the placement of a TCP connection's metadata o
   * Default value is `"0.0.0.0"`
 
 The address which logstash will listen on.
+This plugin supports both IPv4 and IPv6. To receive data over IPv6 use an IPv6 address in this setting.
+
+Example:
+[source,ruby]
+    input {
+      udp {
+        host => "::1"
+      }
+    }
 
 [id="plugins-{type}s-{plugin}-port"]
 ===== `port` 
