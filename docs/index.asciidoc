@@ -76,7 +76,7 @@ The maximum packet size to read from the network
 * Value type is <<string,string>>
 * Supported values are:
 ** `disabled`: unstructured connection metadata added at root level
-** `v1`: structured connection metadata added under ECS compliant namespaces
+** `v1`, `v8`: structured connection metadata added under ECS compliant namespaces
 * Default value depends on which version of Logstash is running:
 ** When Logstash provides a `pipeline.ecs_compatibility` setting, its value is used as the default
 ** Otherwise, the default value is `disabled`.
@@ -88,7 +88,7 @@ The value of this setting affects the placement of a TCP connection's metadata o
 .Metadata Location by `ecs_compatibility` value
 [cols="<l,<l,e,<e"]
 |=======================================================================
-|`disabled`              |`v1`                      |Availability |Description
+|`disabled`              |`v1`, `v8`                |Availability |Description
 
 |host                    |[host][ip]                |Always       |Source IP of UDP packet
 |=======================================================================
